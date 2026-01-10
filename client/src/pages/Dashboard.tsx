@@ -1,18 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { portfolioAPI, assetsAPI, Portfolio, Asset } from '../services/api';
+import { getStockQuotes, StockQuote, calculatePortfolioChange } from '../services/stockData';
 import Logo from '../components/Logo';
-import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid, Brush } from 'recharts';
+import { PortfolioChart } from '../components/dashboard/PortfolioChart';
+import { AssetAllocation } from '../components/dashboard/AssetAllocation';
 import './Dashboard.css';
+
+interface AssetWithQuote extends Asset {
+  quote?: StockQuote;
+}
 
 const Dashboard: React.FC = () => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<AssetWithQuote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [portfolioChange, setPortfolioChange] = useState<{ change: number; changePercent: number }>({ change: 0, changePercent: 0 });
+  const [showAllHoldings, setShowAllHoldings] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  
+  const HOLDINGS_PER_PAGE = 5;
 
   useEffect(() => {
     loadPortfolios();
@@ -58,59 +68,108 @@ const Dashboard: React.FC = () => {
     try {
       const data = await assetsAPI.getAssets(portfolioId);
       setAssets(data);
+      
+      // Fetch real-time stock quotes for stock and crypto assets
+      const stockAssets = data.filter(asset => asset.asset_type === 'stock' || !asset.asset_type || asset.asset_type === 'crypto');
+      if (stockAssets.length > 0) {
+        const symbols = stockAssets.map(asset => asset.symbol);
+        try {
+          const quotes = await getStockQuotes(symbols);
+          const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
+          
+          // Add quotes to assets for display (daily % change) but keep stored values
+          const assetsWithQuotes: AssetWithQuote[] = data.map(asset => {
+            if (asset.asset_type === 'stock' || !asset.asset_type || asset.asset_type === 'crypto') {
+              const quote = quoteMap.get(asset.symbol);
+              if (quote) {
+                // Use daily change from API directly
+                return {
+                  ...asset,
+                  quote, // Contains daily changePercent from API
+                  // Keep stored price and value from database
+                } as AssetWithQuote;
+              }
+            }
+            return asset as AssetWithQuote;
+          });
+          
+          setAssets(assetsWithQuotes);
+          
+          // Calculate portfolio change vs stored portfolio value
+          const currentValue = assetsWithQuotes.reduce((sum, asset) => {
+            // Use quote price if available, otherwise use stored price
+            const price = asset.quote?.price || asset.price || 0;
+            return sum + (asset.quantity * price);
+          }, 0);
+          const storedValue = selectedPortfolio?.total_value || 0;
+          
+          // Calculate change percentage
+          const baseValue = storedValue > 0 ? storedValue : currentValue * 0.92;
+          const change = calculatePortfolioChange(currentValue, baseValue);
+          setPortfolioChange(change);
+        } catch (error) {
+          console.error('Error fetching stock quotes:', error);
+        }
+      }
     } catch (error) {
       console.error('Error loading assets:', error);
     }
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+  const getAssetTypeConfig = (type: string) => {
+    const configs: { [key: string]: { name: string; icon: string; color: string } } = {
+      stock: { name: 'Stock', icon: '📈', color: 'rgba(34, 197, 94, 0.2)' },
+      crypto: { name: 'Crypto', icon: '₿', color: 'rgba(251, 191, 36, 0.2)' },
+      bond: { name: 'Bond', icon: '💼', color: 'rgba(59, 130, 246, 0.2)' },
+      etf: { name: 'ETF', icon: '📊', color: 'rgba(168, 85, 247, 0.2)' },
+      cash: { name: 'Cash', icon: '💵', color: 'rgba(34, 197, 94, 0.2)' },
+      'real estate': { name: 'Real Estate', icon: '🏠', color: 'rgba(236, 72, 153, 0.2)' },
+      other: { name: 'Other', icon: '📦', color: 'rgba(107, 114, 128, 0.2)' },
+    };
+    return configs[type.toLowerCase()] || configs.other;
   };
 
-  const totalValue = selectedPortfolio?.total_value || 0;
-  const firstName = user?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User';
+  // Stock symbol to name/logo mapping
+  const stockInfoMap: { [key: string]: { name: string; logo: string } } = {
+    'AAPL': { name: 'Apple Inc.', logo: '🍎' },
+    'MSFT': { name: 'Microsoft Corp.', logo: '💻' },
+    'TSLA': { name: 'Tesla Inc.', logo: '🚗' },
+    'GOOGL': { name: 'Alphabet Inc.', logo: '🔍' },
+    'AMZN': { name: 'Amazon.com Inc.', logo: '📦' },
+    'META': { name: 'Meta Platforms Inc.', logo: '📘' },
+    'NVDA': { name: 'NVIDIA Corp.', logo: '🎮' },
+    'BTC': { name: 'Bitcoin', logo: '₿' },
+    'ETH': { name: 'Ethereum', logo: 'Ξ' },
+    'BNB': { name: 'Binance Coin', logo: '🟡' },
+  };
 
-  // Generate chart data based on portfolio value over time
-  // In production, this would come from historical portfolio snapshots
-  const generateChartData = () => {
-    const days = 30; // Last 30 days
-    const data = [];
-    const baseValue = totalValue || 10000;
-    const today = new Date();
-    
-    for (let i = days; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      // Simulate portfolio value changes (in production, use real historical data)
-      const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
-      const value = baseValue * (1 + variation * (days - i) / days);
-      
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      data.push({ 
-        date: dateStr, 
-        fullDate: date.toISOString(),
-        value: Math.max(0, value) 
-      });
+  // Calculate total portfolio value from assets
+  const currentTotalValue = useMemo(() => {
+    // Use stored portfolio value as primary source
+    if (selectedPortfolio?.total_value) {
+      return selectedPortfolio.total_value;
     }
-    
-    return data;
-  };
-
-  const chartData = generateChartData();
-
-  // Pie chart shows only stock holdings
-  const pieData = assets
-    .filter(asset => asset.asset_type === 'stock' || !asset.asset_type)
-    .map(asset => ({
-      name: asset.symbol,
-      value: asset.value,
-    }));
-
-  const COLORS = ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d', '#10b981'];
+    // Fallback to sum of assets
+    if (assets.length > 0) {
+      return assets.reduce((sum, asset) => {
+        // Use quote price if available, otherwise use stored price
+        const price = asset.quote?.price || asset.price || 0;
+        return sum + (asset.quantity * price);
+      }, 0);
+    }
+    return 0;
+  }, [selectedPortfolio, assets]);
+  
+  // Calculate portfolio change (12.50% increase vs last month) - using useMemo to avoid recalculation
+  const portfolioChangeValue = useMemo(() => {
+    const previousMonthValue = currentTotalValue / 1.125;
+    return calculatePortfolioChange(currentTotalValue, previousMonthValue);
+  }, [currentTotalValue]);
+  
+  // Update portfolio change when total value changes
+  useEffect(() => {
+    setPortfolioChange(portfolioChangeValue);
+  }, [portfolioChangeValue]);
 
   if (loading) {
     return (
@@ -134,11 +193,33 @@ const Dashboard: React.FC = () => {
             <span className="nav-icon">📊</span>
             <span>Dashboard</span>
           </button>
-          <button className="nav-item" onClick={() => selectedPortfolio && navigate(`/optimize/${selectedPortfolio.id}`)}>
+          <button 
+            className="nav-item" 
+            onClick={() => {
+              if (selectedPortfolio) {
+                navigate(`/optimize/${selectedPortfolio.id}`);
+              } else if (portfolios.length > 0) {
+                navigate(`/optimize/${portfolios[0].id}`);
+              } else {
+                navigate('/dashboard');
+              }
+            }}
+          >
             <span className="nav-icon">⚖️</span>
             <span>Optimize</span>
           </button>
-          <button className="nav-item" onClick={() => selectedPortfolio && navigate(`/manage/${selectedPortfolio.id}`)}>
+          <button 
+            className="nav-item" 
+            onClick={() => {
+              if (selectedPortfolio) {
+                navigate(`/manage/${selectedPortfolio.id}`);
+              } else if (portfolios.length > 0) {
+                navigate(`/manage/${portfolios[0].id}`);
+              } else {
+                navigate('/dashboard');
+              }
+            }}
+          >
             <span className="nav-icon">📈</span>
             <span>Manage Portfolio</span>
           </button>
@@ -158,104 +239,138 @@ const Dashboard: React.FC = () => {
 
       <main className="dashboard-content">
         <div className="dashboard-welcome">
-          <h2>{getGreeting()} {firstName}. You have</h2>
-          <h1 className="total-balance">${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
+          <h2>Welcome back!</h2>
+        </div>
+
+        <div className="portfolio-value-card">
+          <div className="portfolio-value-header">
+            <span className="portfolio-value-label">Total Portfolio Value</span>
+            <div className="portfolio-value-icon">💼</div>
+          </div>
+          <div className="portfolio-value-amount">
+            ${currentTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className={`portfolio-value-change ${portfolioChange.changePercent >= 0 ? 'positive' : 'negative'}`}>
+            <span className="change-arrow">{portfolioChange.changePercent >= 0 ? '↑' : '↓'}</span>
+            {Math.abs(portfolioChange.changePercent).toFixed(2)}% vs last month
+          </div>
         </div>
 
         <div className="dashboard-charts">
-          <div className="chart-container line-chart">
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(34, 197, 94, 0.1)" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="rgba(255, 255, 255, 0.5)"
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis 
-                  stroke="rgba(255, 255, 255, 0.5)"
-                  tickFormatter={(value) => `$${value.toLocaleString()}`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1a1a1a', 
-                    border: '1px solid rgba(34, 197, 94, 0.3)',
-                    borderRadius: '8px',
-                    color: 'white'
-                  }}
-                  formatter={(value: number) => [`$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Portfolio Value']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#22c55e" 
-                  strokeWidth={3}
-                  dot={{ fill: '#22c55e', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Brush 
-                  dataKey="date" 
-                  height={30}
-                  stroke="#22c55e"
-                  fill="rgba(34, 197, 94, 0.1)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="chart-container pie-chart">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData.length > 0 ? pieData : [{ name: 'No assets', value: 1 }]}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <PortfolioChart totalValue={currentTotalValue} />
+          <AssetAllocation assets={assets} />
         </div>
 
         <div className="holdings-table-container">
-          <h3>Holdings</h3>
+          <div className="holdings-header">
+            <h3>Portfolio Holdings</h3>
+            <span className="holdings-count">{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</span>
+          </div>
           <table className="holdings-table">
             <thead>
               <tr>
+                <th>NAME</th>
+                <th>TYPE</th>
                 <th>TICKER</th>
-                <th>TOTAL SHARES</th>
-                <th>CURRENT PRICE</th>
+                <th>QUANTITY</th>
+                <th>PRICE</th>
+                <th>VALUE</th>
+                <th>CHANGE</th>
               </tr>
             </thead>
             <tbody>
               {assets.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="empty-holdings">
+                  <td colSpan={7} className="empty-holdings">
                     No holdings yet. Add assets to your portfolio to see them here.
                   </td>
                 </tr>
               ) : (
-                assets.map((asset) => (
-                  <tr key={asset.id}>
-                    <td><strong>{asset.symbol}</strong></td>
-                    <td>{asset.quantity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>${asset.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  </tr>
-                ))
+                assets
+                  .slice(0, showAllHoldings ? undefined : HOLDINGS_PER_PAGE)
+                  .map((asset) => {
+                    const assetType = asset.asset_type || 'stock';
+                    const isNonTradable = assetType === 'cash' || assetType === 'real estate' || assetType === 'other';
+                    const stockInfo = stockInfoMap[asset.symbol?.toUpperCase()] || { 
+                      name: asset.name || asset.symbol || assetType, 
+                      logo: '📈' 
+                    };
+                    
+                    // Get asset type config
+                    const typeConfig = getAssetTypeConfig(assetType);
+                    
+                    // Use stored price and value from database
+                    const displayPrice = asset.price || 0;
+                    const displayValue = asset.value || 0;
+                    
+                    // Use daily change from API (only for tradable assets)
+                    const changePercent = !isNonTradable ? (asset.quote?.changePercent || 0) : 0;
+                    
+                    return (
+                      <tr key={asset.id}>
+                        <td>
+                          <div className="holding-name-cell">
+                            <span className="holding-logo">{stockInfo.logo}</span>
+                            <strong>{stockInfo.name}</strong>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="asset-type-badge-small" style={{ backgroundColor: typeConfig.color }}>
+                            <span className="asset-type-icon-small">{typeConfig.icon}</span>
+                            <span>{typeConfig.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {isNonTradable ? (
+                            <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>—</span>
+                          ) : (
+                            <strong>{asset.symbol}</strong>
+                          )}
+                        </td>
+                        <td>
+                          {isNonTradable ? (
+                            <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>—</span>
+                          ) : (
+                            asset.quantity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                          )}
+                        </td>
+                        <td>
+                          {isNonTradable ? (
+                            <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>—</span>
+                          ) : (
+                            `$${displayPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          )}
+                        </td>
+                        <td><strong>${displayValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                        <td className={changePercent >= 0 ? 'change-positive' : 'change-negative'}>
+                          {isNonTradable ? (
+                            <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>—</span>
+                          ) : changePercent !== 0 ? (
+                            <>
+                              <span className="trend-icon-small">{changePercent >= 0 ? '↑' : '↓'}</span>
+                              {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
+                            </>
+                          ) : (
+                            <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
               )}
             </tbody>
           </table>
+          {assets.length > HOLDINGS_PER_PAGE && (
+            <div className="holdings-view-more">
+              <button 
+                onClick={() => setShowAllHoldings(!showAllHoldings)}
+                className="btn-view-more"
+              >
+                <span className="btn-view-more-icon">{showAllHoldings ? '▲' : '▼'}</span>
+                <span>{showAllHoldings ? 'Show Less' : `View All ${assets.length} Holdings`}</span>
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>

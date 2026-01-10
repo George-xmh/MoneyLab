@@ -76,7 +76,7 @@ def get_portfolio(portfolio_id):
 @jwt_required()
 def update_portfolio(portfolio_id):
     """Update a portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:

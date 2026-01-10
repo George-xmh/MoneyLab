@@ -12,7 +12,7 @@ assets_bp = Blueprint('assets', __name__)
 @jwt_required()
 def get_assets(portfolio_id):
     """Get all assets for a portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:
@@ -25,7 +25,7 @@ def get_assets(portfolio_id):
 @jwt_required()
 def create_asset(portfolio_id):
     """Add an asset to a portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:
@@ -66,7 +66,7 @@ def create_asset(portfolio_id):
 @jwt_required()
 def update_asset(asset_id):
     """Update an asset"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     asset = Asset.query.get(asset_id)
     
     if not asset:
@@ -105,7 +105,7 @@ def update_asset(asset_id):
 @jwt_required()
 def delete_asset(asset_id):
     """Delete an asset"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     asset = Asset.query.get(asset_id)
     
     if not asset:
@@ -128,7 +128,7 @@ def delete_asset(asset_id):
 @jwt_required()
 def get_allocations(portfolio_id):
     """Get target allocations for a portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:
@@ -141,7 +141,7 @@ def get_allocations(portfolio_id):
 @jwt_required()
 def create_allocation(portfolio_id):
     """Set target allocation for a portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:
@@ -180,7 +180,7 @@ def create_allocation(portfolio_id):
 @jwt_required()
 def delete_allocation(allocation_id):
     """Delete a target allocation"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     allocation = AssetAllocation.query.get(allocation_id)
     
     if not allocation:

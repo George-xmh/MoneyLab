@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
@@ -10,10 +10,17 @@ const Login: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, signup } = useAuth();
+  const { login, signup, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [success, setSuccess] = useState(false);
+
+  // Redirect to dashboard when user is authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/dashboard');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +35,7 @@ const Login: React.FC = () => {
         await login(email, password);
       }
       setSuccess(true);
-      // Show success message briefly before navigating
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+      // The useEffect will handle navigation when user is set
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
       setLoading(false);
