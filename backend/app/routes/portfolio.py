@@ -6,7 +6,10 @@ from app import db
 from app.models.portfolio import Portfolio, Asset, AssetAllocation
 from app.models.user import User
 from app.utils.rebalancing import calculate_rebalancing, calculate_portfolio_metrics
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+import logging
+
+logger = logging.getLogger(__name__)
 
 portfolio_bp = Blueprint('portfolio', __name__)
 
@@ -14,16 +17,28 @@ portfolio_bp = Blueprint('portfolio', __name__)
 @jwt_required()
 def get_portfolios():
     """Get all portfolios for current user"""
-    user_id = get_jwt_identity()
-    portfolios = Portfolio.query.filter_by(user_id=user_id).all()
-    
-    return jsonify([p.to_dict() for p in portfolios]), 200
+    try:
+        # Debug: Log token info
+        token_data = get_jwt()
+        user_id = int(get_jwt_identity())
+        
+        logger.info(f"Token data: {token_data}")
+        logger.info(f"User ID from token: {user_id}")
+        
+        if not user_id:
+            return jsonify({'error': 'Invalid user ID in token'}), 401
+        
+        portfolios = Portfolio.query.filter_by(user_id=user_id).all()
+        return jsonify([p.to_dict() for p in portfolios]), 200
+    except Exception as e:
+        logger.error(f"Error in get_portfolios: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @portfolio_bp.route('', methods=['POST'])
 @jwt_required()
 def create_portfolio():
     """Create a new portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
     
     if not data or not data.get('name'):
@@ -45,7 +60,7 @@ def create_portfolio():
 @jwt_required()
 def get_portfolio(portfolio_id):
     """Get a specific portfolio with assets and allocations"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:
@@ -83,7 +98,7 @@ def update_portfolio(portfolio_id):
 @jwt_required()
 def delete_portfolio(portfolio_id):
     """Delete a portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:
@@ -98,7 +113,7 @@ def delete_portfolio(portfolio_id):
 @jwt_required()
 def get_rebalancing_recommendations(portfolio_id):
     """Get rebalancing recommendations for a portfolio"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     portfolio = Portfolio.query.filter_by(id=portfolio_id, user_id=user_id).first()
     
     if not portfolio:

@@ -1,9 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PortfolioDetail from './pages/PortfolioDetail';
+import ManagePortfolio from './pages/ManagePortfolio';
+import Optimize from './pages/Optimize';
 import './App.css';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -22,6 +25,7 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route
               path="/dashboard"
@@ -39,7 +43,22 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route
+              path="/manage/:id"
+              element={
+                <PrivateRoute>
+                  <ManagePortfolio />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/optimize/:id"
+              element={
+                <PrivateRoute>
+                  <Optimize />
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </div>
       </Router>

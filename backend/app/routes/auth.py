@@ -42,7 +42,10 @@ def verify_firebase_token():
         db.session.commit()
     
     # Create JWT token
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
+    
+    import logging
+    logging.info(f"Created JWT token for user_id: {user.id}, token length: {len(access_token)}")
     
     return jsonify({
         'access_token': access_token,

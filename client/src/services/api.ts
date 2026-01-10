@@ -13,10 +13,30 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    // Trim any whitespace and ensure proper format
+    const cleanToken = token.trim();
+    config.headers.Authorization = `Bearer ${cleanToken}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+// Handle response errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 || error.response?.status === 422) {
+      // Token is invalid or expired, clear it
+      localStorage.removeItem('access_token');
+      // Redirect to login if not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface User {
   id: number;

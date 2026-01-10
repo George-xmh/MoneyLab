@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Logo from '../components/Logo';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -12,9 +13,12 @@ const Login: React.FC = () => {
   const { login, signup } = useAuth();
   const navigate = useNavigate();
 
+  const [success, setSuccess] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
     setLoading(true);
 
     try {
@@ -23,10 +27,13 @@ const Login: React.FC = () => {
       } else {
         await login(email, password);
       }
-      navigate('/dashboard');
+      setSuccess(true);
+      // Show success message briefly before navigating
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -34,13 +41,28 @@ const Login: React.FC = () => {
   return (
     <div className="login-container">
       <div className="login-card">
+        <button 
+          onClick={() => navigate('/')} 
+          className="back-to-home"
+        >
+          Back to Home
+        </button>
         <div className="login-header">
-          <h1>MoneyLab</h1>
+          <div className="login-logo">
+            <Logo size={48} className="login-logo-icon" />
+            <h1>MoneyLab</h1>
+          </div>
           <p>Investment Portfolio Management</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="error-message">{error}</div>}
+          {success && (
+            <div className="success-message">
+              <span className="success-icon">✓</span>
+              {isSignUp ? 'Account created successfully! Redirecting...' : 'Login successful! Redirecting...'}
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -67,8 +89,22 @@ const Login: React.FC = () => {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+          <button type="submit" className="btn btn-primary" disabled={loading || success}>
+            {loading ? (
+              <>
+                <span className="button-spinner"></span>
+                Loading...
+              </>
+            ) : success ? (
+              <>
+                <span className="success-icon">✓</span>
+                Success!
+              </>
+            ) : isSignUp ? (
+              'Sign Up'
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
 

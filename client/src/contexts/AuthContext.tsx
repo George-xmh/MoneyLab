@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, firebaseAuth } from '../services/firebase';
 import { authAPI, User } from '../services/api';
 
 interface AuthContextType {
@@ -44,8 +44,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             firebaseUser.displayName || undefined
           );
           
-          localStorage.setItem('access_token', result.access_token);
-          setUser(result.user);
+          // Store token securely
+          if (result.access_token) {
+            localStorage.setItem('access_token', result.access_token.trim());
+            setUser(result.user);
+          } else {
+            console.error('No access token received from server');
+            localStorage.removeItem('access_token');
+            setUser(null);
+          }
         } catch (error) {
           console.error('Error verifying token:', error);
           localStorage.removeItem('access_token');
@@ -63,20 +70,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { signIn } = await import('../services/firebase');
-    await signIn(email, password);
+    await firebaseAuth.signIn(email, password);
     // Auth state change will handle the rest
   };
 
   const signup = async (email: string, password: string) => {
-    const { signUp } = await import('../services/firebase');
-    await signUp(email, password);
+    await firebaseAuth.signUp(email, password);
     // Auth state change will handle the rest
   };
 
   const logout = async () => {
-    const { signOut } = await import('../services/firebase');
-    await signOut();
+    await firebaseAuth.signOut();
     localStorage.removeItem('access_token');
     setUser(null);
   };
