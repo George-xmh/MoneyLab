@@ -177,12 +177,8 @@ MoneyLab/
 └── README.md
 ```
 
-## Running Tests
+### Architecture Overview
+![MoneyLab Architecture](assets/moneylab_architecture.png)
 
-1. `cd backend/tests`
-2. `pip install -r test-requirements.txt`
-3. `python -m pytest`
-
-## License
-
-MIT
+### Demo Video
+[![MoneyLab Demo Video](assets/ml_thumbnail.png)](https://youtu.be/0vWiDZUxSjo)
