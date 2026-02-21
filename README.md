@@ -176,9 +176,11 @@ MoneyLab/
 │   └── package.json
 └── README.md
 ```
+---
 
 ### Architecture Overview
 ![MoneyLab Architecture](assets/moneylab_architecture.png)
+---
 
 ### Demo Video
 [![MoneyLab Demo Video](assets/ml_thumbnail.png)](https://youtu.be/0vWiDZUxSjo)
