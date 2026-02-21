@@ -183,4 +183,5 @@ MoneyLab/
 ---
 
 ### Demo Video
-[![MoneyLab Demo Video](assets/ml_thumbnail.png)](https://youtu.be/0vWiDZUxSjo)
+https://github.com/user-attachments/assets/2b047af2-1cbd-4bfc-ad2b-2f6d932a3f42
+
