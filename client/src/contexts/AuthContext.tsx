@@ -36,6 +36,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setFirebaseUser(firebaseUser);
       
       if (firebaseUser) {
+        // Set a timeout to ensure loading doesn't stay true forever
+        const timeoutId = setTimeout(() => {
+          console.warn('Token verification taking longer than expected');
+          setLoading(false);
+        }, 10000); // 10 second timeout
+
         try {
           // Verify token with backend and get user data
           const result = await authAPI.verifyToken(
@@ -43,6 +49,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             firebaseUser.email || '',
             firebaseUser.displayName || undefined
           );
+          
+          clearTimeout(timeoutId);
           
           // Store token securely
           if (result.access_token) {
@@ -53,17 +61,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.removeItem('access_token');
             setUser(null);
           }
-        } catch (error) {
+        } catch (error: any) {
+          clearTimeout(timeoutId);
           console.error('Error verifying token:', error);
-          localStorage.removeItem('access_token');
-          setUser(null);
+          console.error('Error details:', error.response?.data || error.message);
+          // Don't clear the token if it's a network error - might be temporary
+          if (error.response?.status === 401 || error.response?.status === 422) {
+            localStorage.removeItem('access_token');
+            setUser(null);
+          } else {
+            // For other errors, still try to set user from Firebase
+            // The token might still be valid
+            console.warn('Non-auth error during token verification, keeping Firebase user');
+          }
+        } finally {
+          setLoading(false);
         }
       } else {
         localStorage.removeItem('access_token');
         setUser(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return unsubscribe;

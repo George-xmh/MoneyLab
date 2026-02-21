@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import PortfolioDetail from './pages/PortfolioDetail';
 import ManagePortfolio from './pages/ManagePortfolio';
 import Optimize from './pages/Optimize';
+import Account from './pages/Account';
 import './App.css';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -56,6 +57,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <Optimize />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/account"
+              element={
+                <PrivateRoute>
+                  <Account />
                 </PrivateRoute>
               }
             />

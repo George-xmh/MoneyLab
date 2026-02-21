@@ -10,7 +10,7 @@ const Login: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, signup, user, loading: authLoading } = useAuth();
+  const { login, signup, user, firebaseUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [success, setSuccess] = useState(false);
@@ -21,6 +21,36 @@ const Login: React.FC = () => {
       navigate('/dashboard');
     }
   }, [user, authLoading, navigate]);
+
+  // Handle navigation after successful Firebase auth
+  // Navigate if Firebase auth succeeded, even if backend verification is pending
+  useEffect(() => {
+    if (success) {
+      // If Firebase user exists, we can navigate (backend verification can happen in background)
+      if (firebaseUser) {
+        // Check if we have a token or wait a moment for it to be set
+        const token = localStorage.getItem('access_token');
+        if (token || user) {
+          // Navigate immediately if we have token or user
+          navigate('/dashboard');
+        } else {
+          // Wait a bit for token to be set by AuthContext
+          const timeout = setTimeout(() => {
+            const checkToken = localStorage.getItem('access_token');
+            if (checkToken || user) {
+              navigate('/dashboard');
+            } else {
+              // If still no token after 2 seconds, navigate anyway
+              // Dashboard will handle the loading/error state
+              console.warn('Navigating to dashboard without token - backend verification may be pending');
+              navigate('/dashboard');
+            }
+          }, 2000);
+          return () => clearTimeout(timeout);
+        }
+      }
+    }
+  }, [success, firebaseUser, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,10 +65,12 @@ const Login: React.FC = () => {
         await login(email, password);
       }
       setSuccess(true);
-      // The useEffect will handle navigation when user is set
+      // Reset loading state - navigation will be handled by useEffect
+      setLoading(false);
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
       setLoading(false);
+      setSuccess(false);
     }
   };
 

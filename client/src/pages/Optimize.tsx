@@ -231,7 +231,7 @@ const Optimize: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
-          <button className="nav-item">
+          <button className="nav-item" onClick={() => navigate('/account')}>
             <span className="nav-icon">👤</span>
             <span>Account</span>
           </button>
@@ -346,45 +346,51 @@ const Optimize: React.FC = () => {
             </div>
 
             <div className="instructions-section">
-              <div className="divider"></div>
-              <p>Here are the instructions to rebalance your portfolio:</p>
-              <p className="legend">
-                <span className="red-text">Red</span> = sell order, <span className="green-text">green</span> = buy order.
-              </p>
-              <a href="#" className="learn-more">Learn more about these results</a>
+              <div className="instructions-card">
+                <h3 className="instructions-title">How to read your rebalancing plan</h3>
+                <p className="instructions-intro">Follow the steps below to align your portfolio with your target allocation.</p>
+                <div className="legend-row">
+                  <span className="legend-badge legend-badge--sell">
+                    <span className="legend-badge-dot"></span>
+                    Sell order
+                  </span>
+                  <span className="legend-badge legend-badge--buy">
+                    <span className="legend-badge-dot"></span>
+                    Buy order
+                  </span>
+                </div>
+                <button type="button" className="learn-more-btn" onClick={() => window.open('https://www.investopedia.com/terms/r/rebalancing.asp', '_blank')}>
+                  Learn more about these results
+                  <span className="learn-more-arrow" aria-hidden>→</span>
+                </button>
+              </div>
             </div>
 
-            <div className="actions-table-container">
-              <table className="actions-table">
-                <thead>
-                  <tr>
-                    <th>ACTION</th>
-                    <th>ASSET</th>
-                    <th>AMOUNT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {actions.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="empty-actions">
-                        No rebalancing actions needed. Your portfolio is already aligned with the target model.
-                      </td>
-                    </tr>
-                  ) : (
-                    actions.map((action, index) => (
-                      <tr key={index}>
-                        <td className={action.action === 'Buy' ? 'action-buy' : 'action-sell'}>
-                          {action.action}
-                        </td>
-                        <td><strong>{action.asset}</strong></td>
-                        <td className={action.action === 'Buy' ? 'amount-buy' : 'amount-sell'}>
-                          {action.action === 'Sell' ? '(' : ''}${Math.abs(action.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{action.action === 'Sell' ? ')' : ''}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="actions-section">
+              <h3 className="actions-section-title">Your rebalancing steps</h3>
+              {actions.length === 0 ? (
+                <div className="actions-empty">
+                  <div className="actions-empty-icon">✓</div>
+                  <p>No rebalancing needed. Your portfolio is already aligned with the target model.</p>
+                </div>
+              ) : (
+                <ul className="actions-list">
+                  {actions.map((action, index) => (
+                    <li key={index} className={`action-card action-card--${action.action.toLowerCase()}`}>
+                      <span className="action-card-icon" aria-hidden>
+                        {action.action === 'Buy' ? '↑' : '↓'}
+                      </span>
+                      <div className="action-card-body">
+                        <span className="action-card-label">{action.action}</span>
+                        <span className="action-card-asset">{action.asset}</span>
+                      </div>
+                      <span className="action-card-amount">
+                        {action.action === 'Sell' ? '−' : '+'}${Math.abs(action.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </>
         )}

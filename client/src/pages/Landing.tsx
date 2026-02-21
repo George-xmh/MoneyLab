@@ -63,38 +63,28 @@ const Landing: React.FC = () => {
         </div>
 
         <section id="features" className="features-section">
-          <h2 className="section-title">Why Choose MoneyLab?</h2>
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">📊</div>
-              <h3>Portfolio Tracking</h3>
-              <p>Monitor all your investments in one place with real-time portfolio value tracking.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">🎯</div>
-              <h3>Asset Allocation</h3>
-              <p>Set and maintain your ideal asset allocation targets based on your risk tolerance.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">⚖️</div>
-              <h3>Smart Rebalancing</h3>
-              <p>Get automated recommendations on when and how to rebalance your portfolio.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">📈</div>
-              <h3>Performance Analytics</h3>
-              <p>Track your portfolio performance over time with detailed analytics and insights.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">🔒</div>
-              <h3>Secure & Private</h3>
-              <p>Your financial data is encrypted and stored securely. Your privacy is our priority.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">🚀</div>
-              <h3>Easy to Use</h3>
-              <p>Intuitive interface designed for both beginners and experienced investors.</p>
-            </div>
+          <div className="features-inner">
+            <p className="features-kicker">Simple as it gets</p>
+            <h2 className="features-headline">
+              One place to track, target, and rebalance.
+            </h2>
+            <ol className="features-steps">
+              <li className="features-step-item">
+                <span className="features-step-num" aria-hidden>01</span>
+                <span className="features-step-text">Add your holdings</span>
+              </li>
+              <li className="features-step-item">
+                <span className="features-step-num" aria-hidden>02</span>
+                <span className="features-step-text">Pick a target mix</span>
+              </li>
+              <li className="features-step-item">
+                <span className="features-step-num" aria-hidden>03</span>
+                <span className="features-step-text">Follow the steps</span>
+              </li>
+            </ol>
+            <p className="features-voice">
+              No fluff. No upsells. Just your portfolio and clear rebalancing steps so your allocation stays where you want it.
+            </p>
           </div>
         </section>
 
@@ -111,7 +101,7 @@ const Landing: React.FC = () => {
       </main>
 
       <footer className="landing-footer">
-        <p>&copy; 2025 MoneyLab. All rights reserved.</p>
+        <p>&copy; 2025 MoneyLab. Built by George Xie.</p>
       </footer>
     </div>
   );

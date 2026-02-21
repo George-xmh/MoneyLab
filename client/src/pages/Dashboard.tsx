@@ -226,7 +226,7 @@ const Dashboard: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
-          <button className="nav-item">
+          <button className="nav-item" onClick={() => navigate('/account')}>
             <span className="nav-icon">👤</span>
             <span>Account</span>
           </button>
