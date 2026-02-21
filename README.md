@@ -1,8 +1,20 @@
+<div align="center">
+
 # MoneyLab
 
 ### An All-in-One Investment Management Platform
 
 #### _Monitor, Analyze, and Rebalance Your Portfolio to Align with Your Financial Goals_
+
+[![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-%2320232a.svg?style=for-the-badge&logo=typescript&logoColor=blue)](https://www.typescriptlang.org/)
+[![Flask](https://img.shields.io/badge/Flask-%23404d59.svg?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-039BE5?style=for-the-badge&logo=Firebase&logoColor=white)](https://firebase.google.com/)
+
+</div>
+
+---
 
 ## What is MoneyLab?
 
