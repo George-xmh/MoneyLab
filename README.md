@@ -28,6 +28,9 @@ MoneyLab is a modern investment management platform designed to assist users in 
 - 📈 **Performance Analytics**: Track portfolio performance over time
 - 🔒 **Secure**: Encrypted storage of sensitive financial data
 - 👤 **User Authentication**: Secure user accounts and data isolation
+- 
+### Demo Video
+https://github.com/user-attachments/assets/2b047af2-1cbd-4bfc-ad2b-2f6d932a3f42
 
 ## Getting Started
 
@@ -193,7 +196,4 @@ MoneyLab/
 ### Architecture Overview
 ![MoneyLab Architecture](assets/moneylab_architecture.png)
 ---
-
-### Demo Video
-https://github.com/user-attachments/assets/2b047af2-1cbd-4bfc-ad2b-2f6d932a3f42
 
